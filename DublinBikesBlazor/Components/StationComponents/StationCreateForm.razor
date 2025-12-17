@@ -1,0 +1,140 @@
+@using DublinBikesBlazor.Models
+@using DublinBikesBlazor.Services
+@inject StationsApiClient ApiClient
+
+<div class="card shadow-sm">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0">
+            <i class="bi bi-plus-circle"></i> Create New Station
+        </h5>
+    </div>
+    <div class="card-body">
+        <EditForm Model="@_createDto" OnValidSubmit="HandleSubmit" FormName="createStationForm">
+            <DataAnnotationsValidator />
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> @_errorMessage
+                </div>
+            }
+
+            <div class="mb-3">
+                <label for="number" class="form-label">Station Number *</label>
+                <InputNumber id="number" class="form-control" @bind-Value="_createDto.Number" aria-required="true" />
+                <ValidationMessage For="@(() => _createDto.Number)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="name" class="form-label">Name *</label>
+                <InputText id="name" class="form-control" @bind-Value="_createDto.Name" aria-required="true" />
+                <ValidationMessage For="@(() => _createDto.Name)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="address" class="form-label">Address *</label>
+                <InputText id="address" class="form-control" @bind-Value="_createDto.Address" aria-required="true" />
+                <ValidationMessage For="@(() => _createDto.Address)" />
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="latitude" class="form-label">Latitude *</label>
+                    <InputNumber id="latitude" class="form-control" @bind-Value="_createDto.Latitude" step="0.000001" aria-required="true" />
+                    <ValidationMessage For="@(() => _createDto.Latitude)" />
+                    <small class="form-text text-muted">Range: -90 to 90</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="longitude" class="form-label">Longitude *</label>
+                    <InputNumber id="longitude" class="form-control" @bind-Value="_createDto.Longitude" step="0.000001" aria-required="true" />
+                    <ValidationMessage For="@(() => _createDto.Longitude)" />
+                    <small class="form-text text-muted">Range: -180 to 180</small>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="bikeStands" class="form-label">Total Bike Stands *</label>
+                    <InputNumber id="bikeStands" class="form-control" @bind-Value="_createDto.BikeStands" aria-required="true" />
+                    <ValidationMessage For="@(() => _createDto.BikeStands)" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="availableBikes" class="form-label">Available Bikes *</label>
+                    <InputNumber id="availableBikes" class="form-control" @bind-Value="_createDto.AvailableBikes" aria-required="true" />
+                    <ValidationMessage For="@(() => _createDto.AvailableBikes)" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="status" class="form-label">Status *</label>
+                <InputSelect id="status" class="form-select" @bind-Value="_createDto.Status" aria-required="true">
+                    <option value="OPEN">Open</option>
+                    <option value="CLOSED">Closed</option>
+                </InputSelect>
+                <ValidationMessage For="@(() => _createDto.Status)" />
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-success" disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Creating...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-check-circle"></i>
+                        <span>Create Station</span>
+                    }
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="OnCancel" disabled="@_isSubmitting">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<StationDto> OnStationCreated { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private CreateStationDto _createDto = new()
+    {
+        Status = "OPEN",
+        BikeStands = 30,
+        AvailableBikes = 15
+    };
+
+    private bool _isSubmitting = false;
+    private string? _errorMessage;
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            _isSubmitting = true;
+            _errorMessage = null;
+            StateHasChanged();
+
+            var station = await ApiClient.CreateStationAsync(_createDto);
+
+            if (station != null)
+            {
+                await OnStationCreated.InvokeAsync(station);
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to create station: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,459 @@
+@page "/stations"
+@using Microsoft.JSInterop
+@inject StationsApiClient ApiClient
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Dublin Bikes Stations</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4">
+                <i class="bi bi-bicycle"></i> Dublin Bikes Stations
+            </h1>
+            <p class="lead text-muted">Real-time bike station availability across Dublin</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>Error:</strong> @_errorMessage
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = null" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            @_successMessage
+            <button type="button" class="btn-close" @onclick="() => _successMessage = null" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-funnel"></i> Search & Filters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="searchBox" class="form-label">Search by Name/Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text"
+                                       class="form-control"
+                                       id="searchBox"
+                                       placeholder="Search stations..."
+                                       @bind="_searchQuery"
+                                       @bind:event="oninput"
+                                       aria-label="Search stations by name or address" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="statusFilter" class="form-label">Status</label>
+                            <select class="form-select"
+                                    id="statusFilter"
+                                    @bind="_statusFilter"
+                                    aria-label="Filter by station status">
+                                <option value="">All Stations</option>
+                                <option value="OPEN">Open Only</option>
+                                <option value="CLOSED">Closed Only</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="minBikesFilter" class="form-label">Minimum Available Bikes</label>
+                            <input type="number"
+                                   class="form-control"
+                                   id="minBikesFilter"
+                                   min="0"
+                                   max="100"
+                                   @bind="_minBikes"
+                                   aria-label="Filter by minimum available bikes" />
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" @onclick="ApplyFilters">
+                                <i class="bi bi-filter"></i> Apply
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="ClearFilters">
+                                <i class="bi bi-x-circle"></i> Clear Filters
+                            </button>
+                            <button class="btn btn-success btn-sm ms-2" @onclick="ShowCreateForm">
+                                <i class="bi bi-plus-circle"></i> Add New Station
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Stations List</h5>
+                    @if (_pagedResponse != null)
+                    {
+                        <span class="badge bg-light text-dark">
+                            @_pagedResponse.TotalCount stations
+                        </span>
+                    }
+                </div>
+                <div class="card-body p-0">
+                    @if (_isLoading)
+                    {
+                        <div class="text-center p-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading stations...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Loading stations...</p>
+                        </div>
+                    }
+                    else if (_pagedResponse?.Data?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0" aria-label="Dublin Bikes stations list">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th scope="col" class="text-center">No.</th>
+                                        <th scope="col">
+                                            <button class="btn btn-link text-white text-decoration-none p-0" @onclick="@(() => SortBy("name"))">
+                                                Station Name @GetSortIcon("name")
+                                            </button>
+                                        </th>
+                                        <th scope="col">Address</th>
+                                        <th scope="col" class="text-center">Status</th>
+                                        <th scope="col" class="text-center">
+                                            <button class="btn btn-link text-white text-decoration-none p-0" @onclick="@(() => SortBy("availableBikes"))">
+                                                Bikes @GetSortIcon("availableBikes")
+                                            </button>
+                                        </th>
+                                        <th scope="col" class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var station in _pagedResponse.Data)
+                                    {
+                                        <tr class="@((_selectedStation?.Number == station.Number) ? "table-active" : "")">
+                                            <td class="text-center align-middle">@station.Number</td>
+                                            <td class="align-middle">
+                                                <strong>@station.Name</strong>
+                                            </td>
+                                            <td class="align-middle">@station.Address</td>
+                                            <td class="text-center align-middle">
+                                                <span class="badge @(station.Status == "OPEN" ? "bg-success" : "bg-danger")">
+                                                    @station.Status
+                                                </span>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <div>
+                                                    <strong>@station.AvailableBikes</strong> / @station.BikeStands
+                                                    <br />
+                                                    <small class="text-muted">@station.Occupancy.ToString("F1")% full</small>
+                                                </div>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <div class="btn-group btn-group-sm" role="group" aria-label="Station actions">
+                                                    <button class="btn btn-primary"
+                                                            @onclick="() => SelectStation(station)"
+                                                            aria-label="View details for @station.Name">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-warning"
+                                                            @onclick="() => ShowEditForm(station)"
+                                                            aria-label="Edit @station.Name">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button class="btn btn-danger"
+                                                            @onclick="() => DeleteStation(station.Number)"
+                                                            aria-label="Delete @station.Name">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div>
+                                    <span class="text-muted">
+                                        Page @_currentPage of @_pagedResponse.TotalPages
+                                        (@_pagedResponse.TotalCount total)
+                                    </span>
+                                </div>
+                                <nav aria-label="Stations pagination">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        <li class="page-item @(!_pagedResponse.HasPrevious ? "disabled" : "")">
+                                            <button class="page-link"
+                                                    @onclick="PreviousPage"
+                                                    disabled="@(!_pagedResponse.HasPrevious)"
+                                                    aria-label="Previous page">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </button>
+                                        </li>
+
+                                        @for (int i = Math.Max(1, _currentPage - 2); i <= Math.Min(_pagedResponse.TotalPages, _currentPage + 2); i++)
+                                        {
+                                            var pageNum = i;
+                                            <li class="page-item @(_currentPage == pageNum ? "active" : "")">
+                                                <button class="page-link"
+                                                        @onclick="() => GoToPage(pageNum)"
+                                                        aria-label="Go to page @pageNum"
+                                                        aria-current="@(_currentPage == pageNum ? "page" : null)">
+                                                    @pageNum
+                                                </button>
+                                            </li>
+                                        }
+
+                                        <li class="page-item @(!_pagedResponse.HasNext ? "disabled" : "")">
+                                            <button class="page-link"
+                                                    @onclick="NextPage"
+                                                    disabled="@(!_pagedResponse.HasNext)"
+                                                    aria-label="Next page">
+                                                <span aria-hidden="true">&raquo;</span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center p-5">
+                            <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                            <p class="mt-3 text-muted">No stations found matching your criteria.</p>
+                            <button class="btn btn-primary" @onclick="ClearFilters">
+                                Clear Filters
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mt-4 mt-lg-0">
+            @if (_showCreateForm)
+            {
+                <StationCreateForm OnStationCreated="HandleStationCreated"
+                                 OnCancel="() => _showCreateForm = false" />
+            }
+            else if (_showEditForm && _selectedStation != null)
+            {
+                <StationEditForm Station="_selectedStation"
+                               OnStationUpdated="HandleStationUpdated"
+                               OnCancel="() => { _showEditForm = false; _selectedStation = null; }" />
+            }
+            else if (_selectedStation != null)
+            {
+                <StationDetail Station="_selectedStation"
+                             OnEdit="ShowEditForm"
+                             OnDelete="DeleteStation"
+                             OnClose="() => _selectedStation = null" />
+            }
+            else
+            {
+                <div class="card shadow-sm">
+                    <div class="card-body text-center p-5">
+                        <i class="bi bi-info-circle" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="mt-3 text-muted">Select a station to view details</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private PagedResponse<StationDto>? _pagedResponse;
+    private StationDto? _selectedStation;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    private string? _searchQuery;
+    private string? _statusFilter;
+    private int? _minBikes;
+    private string? _sortField = "name";
+    private string? _sortDirection = "asc";
+
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+
+    private bool _showCreateForm = false;
+    private bool _showEditForm = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStations();
+    }
+
+    private async Task LoadStations()
+    {
+        try
+        {
+            _isLoading = true;
+            _errorMessage = null;
+            StateHasChanged();
+
+            _pagedResponse = await ApiClient.GetStationsAsync(
+                status: _statusFilter,
+                minBikes: _minBikes,
+                searchQuery: _searchQuery,
+                sort: _sortField,
+                dir: _sortDirection,
+                page: _currentPage,
+                pageSize: _pageSize
+            );
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load stations: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        _currentPage = 1;
+        await LoadStations();
+    }
+
+    private async Task ClearFilters()
+    {
+        _searchQuery = null;
+        _statusFilter = null;
+        _minBikes = null;
+        _currentPage = 1;
+        await LoadStations();
+    }
+
+    private async Task SortBy(string field)
+    {
+        if (_sortField == field)
+        {
+            _sortDirection = _sortDirection == "asc" ? "desc" : "asc";
+        }
+        else
+        {
+            _sortField = field;
+            _sortDirection = "asc";
+        }
+        await LoadStations();
+    }
+
+    private string GetSortIcon(string field)
+    {
+        if (_sortField != field) return "";
+        return _sortDirection == "asc" ? "↑" : "↓";
+    }
+
+    private void SelectStation(StationDto station)
+    {
+        _selectedStation = station;
+        _showCreateForm = false;
+        _showEditForm = false;
+    }
+
+    private void ShowCreateForm()
+    {
+        _showCreateForm = true;
+        _showEditForm = false;
+        _selectedStation = null;
+    }
+
+    private void ShowEditForm(StationDto station)
+    {
+        _selectedStation = station;
+        _showEditForm = true;
+        _showCreateForm = false;
+    }
+
+    private async Task HandleStationCreated(StationDto station)
+    {
+        _showCreateForm = false;
+        _successMessage = $"Station '{station.Name}' created successfully!";
+        await LoadStations();
+        _selectedStation = station;
+    }
+
+    private async Task HandleStationUpdated(StationDto station)
+    {
+        _showEditForm = false;
+        _successMessage = $"Station '{station.Name}' updated successfully!";
+        await LoadStations();
+        _selectedStation = station;
+    }
+
+    private async Task DeleteStation(int number)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this station?"))
+            return;
+
+        try
+        {
+            var success = await ApiClient.DeleteStationAsync(number);
+            if (success)
+            {
+                _successMessage = "Station deleted successfully!";
+                _selectedStation = null;
+                await LoadStations();
+            }
+            else
+            {
+                _errorMessage = "Station not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to delete station: {ex.Message}";
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        if (_pagedResponse?.HasPrevious == true)
+        {
+            _currentPage--;
+            await LoadStations();
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (_pagedResponse?.HasNext == true)
+        {
+            _currentPage++;
+            await LoadStations();
+        }
+    }
+
+    private async Task GoToPage(int page)
+    {
+        _currentPage = page;
+        await LoadStations();
+    }
+}

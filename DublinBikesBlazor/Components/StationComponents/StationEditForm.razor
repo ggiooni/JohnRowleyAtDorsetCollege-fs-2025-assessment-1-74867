@@ -1,0 +1,145 @@
+@using DublinBikesBlazor.Models
+@using DublinBikesBlazor.Services
+@inject StationsApiClient ApiClient
+
+<div class="card shadow-sm">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">
+            <i class="bi bi-pencil"></i> Edit Station
+        </h5>
+    </div>
+    <div class="card-body">
+        <EditForm Model="@_updateDto" OnValidSubmit="HandleSubmit" FormName="editStationForm">
+            <DataAnnotationsValidator />
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> @_errorMessage
+                </div>
+            }
+
+            <div class="alert alert-info" role="alert">
+                <strong>Editing Station #@Station.Number</strong>
+                <br />
+                <small>Leave fields blank to keep current values</small>
+            </div>
+
+            <div class="mb-3">
+                <label for="editName" class="form-label">Name</label>
+                <InputText id="editName" class="form-control" @bind-Value="_updateDto.Name" placeholder="@Station.Name" />
+                <ValidationMessage For="@(() => _updateDto.Name)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="editAddress" class="form-label">Address</label>
+                <InputText id="editAddress" class="form-control" @bind-Value="_updateDto.Address" placeholder="@Station.Address" />
+                <ValidationMessage For="@(() => _updateDto.Address)" />
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="editLatitude" class="form-label">Latitude</label>
+                    <InputNumber id="editLatitude" class="form-control" @bind-Value="_updateDto.Latitude" step="0.000001" placeholder="@Station.Latitude.ToString()" />
+                    <ValidationMessage For="@(() => _updateDto.Latitude)" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="editLongitude" class="form-label">Longitude</label>
+                    <InputNumber id="editLongitude" class="form-control" @bind-Value="_updateDto.Longitude" step="0.000001" placeholder="@Station.Longitude.ToString()" />
+                    <ValidationMessage For="@(() => _updateDto.Longitude)" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="editBikeStands" class="form-label">Total Stands</label>
+                    <InputNumber id="editBikeStands" class="form-control" @bind-Value="_updateDto.BikeStands" placeholder="@Station.BikeStands.ToString()" />
+                    <ValidationMessage For="@(() => _updateDto.BikeStands)" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="editAvailableBikes" class="form-label">Available Bikes</label>
+                    <InputNumber id="editAvailableBikes" class="form-control" @bind-Value="_updateDto.AvailableBikes" placeholder="@Station.AvailableBikes.ToString()" />
+                    <ValidationMessage For="@(() => _updateDto.AvailableBikes)" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="editAvailableStands" class="form-label">Available Stands</label>
+                    <InputNumber id="editAvailableStands" class="form-control" @bind-Value="_updateDto.AvailableBikeStands" placeholder="@Station.AvailableBikeStands.ToString()" />
+                    <ValidationMessage For="@(() => _updateDto.AvailableBikeStands)" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="editStatus" class="form-label">Status</label>
+                <InputSelect id="editStatus" class="form-select" @bind-Value="_updateDto.Status">
+                    <option value="">Keep current (@Station.Status)</option>
+                    <option value="OPEN">Open</option>
+                    <option value="CLOSED">Closed</option>
+                </InputSelect>
+                <ValidationMessage For="@(() => _updateDto.Status)" />
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-warning" disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Updating...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-check-circle"></i>
+                        <span>Update Station</span>
+                    }
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="OnCancel" disabled="@_isSubmitting">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public StationDto Station { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<StationDto> OnStationUpdated { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private UpdateStationDto _updateDto = new();
+    private bool _isSubmitting = false;
+    private string? _errorMessage;
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            _isSubmitting = true;
+            _errorMessage = null;
+            StateHasChanged();
+
+            var station = await ApiClient.UpdateStationAsync(Station.Number, _updateDto);
+
+            if (station != null)
+            {
+                await OnStationUpdated.InvokeAsync(station);
+            }
+            else
+            {
+                _errorMessage = "Station not found.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to update station: {ex.Message}";
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+}

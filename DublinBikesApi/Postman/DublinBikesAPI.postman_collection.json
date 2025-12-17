@@ -1,0 +1,612 @@
+{
+	"info": {
+		"_postman_id": "dublin-bikes-api-collection",
+		"name": "Dublin Bikes API",
+		"description": "Complete API collection for Dublin Bikes with automated tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "V1 - JSON File Based",
+			"item": [
+				{
+					"name": "Get All Stations",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has data property\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"});",
+									"",
+									"pm.test(\"Response has pagination properties\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('page');",
+									"    pm.expect(jsonData).to.have.property('pageSize');",
+									"    pm.expect(jsonData).to.have.property('totalCount');",
+									"    pm.expect(jsonData).to.have.property('totalPages');",
+									"});",
+									"",
+									"pm.test(\"Data is an array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Stations have required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data.length > 0) {",
+									"        var station = jsonData.data[0];",
+									"        pm.expect(station).to.have.property('number');",
+									"        pm.expect(station).to.have.property('name');",
+									"        pm.expect(station).to.have.property('address');",
+									"        pm.expect(station).to.have.property('latitude');",
+									"        pm.expect(station).to.have.property('longitude');",
+									"        pm.expect(station).to.have.property('bikeStands');",
+									"        pm.expect(station).to.have.property('availableBikes');",
+									"        pm.expect(station).to.have.property('status');",
+									"        pm.expect(station).to.have.property('occupancy');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations"]
+						}
+					}
+				},
+				{
+					"name": "Get Stations with Status Filter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"All stations have OPEN status\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.data.forEach(function(station) {",
+									"        pm.expect(station.status).to.equal('OPEN');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations?status=OPEN",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations"],
+							"query": [
+								{
+									"key": "status",
+									"value": "OPEN"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Stations with MinBikes Filter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"All stations have at least 5 bikes\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.data.forEach(function(station) {",
+									"        pm.expect(station.availableBikes).to.be.at.least(5);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations?minBikes=5",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations"],
+							"query": [
+								{
+									"key": "minBikes",
+									"value": "5"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Stations with Search",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Search results contain query term\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data.length > 0) {",
+									"        jsonData.data.forEach(function(station) {",
+									"            var matchesName = station.name.toLowerCase().includes('street');",
+									"            var matchesAddress = station.address.toLowerCase().includes('street');",
+									"            pm.expect(matchesName || matchesAddress).to.be.true;",
+									"        });",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations?q=street",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations"],
+							"query": [
+								{
+									"key": "q",
+									"value": "street"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Stations with Sorting",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Results are sorted by name\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data.length > 1) {",
+									"        for (let i = 0; i < jsonData.data.length - 1; i++) {",
+									"            pm.expect(jsonData.data[i].name <= jsonData.data[i + 1].name).to.be.true;",
+									"        }",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations?sort=name&dir=asc",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations"],
+							"query": [
+								{
+									"key": "sort",
+									"value": "name"
+								},
+								{
+									"key": "dir",
+									"value": "asc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Stations with Pagination",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Page size is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.pageSize).to.equal(5);",
+									"    pm.expect(jsonData.data.length).to.be.at.most(5);",
+									"});",
+									"",
+									"pm.test(\"Current page is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.page).to.equal(1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations?page=1&pageSize=5",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "5"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Station by Number",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Station number matches\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.number).to.equal(42);",
+									"});",
+									"",
+									"pm.test(\"Station has all required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('name');",
+									"    pm.expect(jsonData).to.have.property('address');",
+									"    pm.expect(jsonData).to.have.property('latitude');",
+									"    pm.expect(jsonData).to.have.property('longitude');",
+									"    pm.expect(jsonData).to.have.property('bikeStands');",
+									"    pm.expect(jsonData).to.have.property('availableBikes');",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData).to.have.property('occupancy');",
+									"    pm.expect(jsonData).to.have.property('lastUpdateLocal');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations/42",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations", "42"]
+						}
+					}
+				},
+				{
+					"name": "Get Station Not Found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Response has error message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations/99999",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations", "99999"]
+						}
+					}
+				},
+				{
+					"name": "Get Stations Summary",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Summary has all required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('totalStations');",
+									"    pm.expect(jsonData).to.have.property('totalBikeStands');",
+									"    pm.expect(jsonData).to.have.property('totalAvailableBikes');",
+									"    pm.expect(jsonData).to.have.property('totalAvailableBikeStands');",
+									"    pm.expect(jsonData).to.have.property('stationsByStatus');",
+									"    pm.expect(jsonData).to.have.property('averageOccupancy');",
+									"});",
+									"",
+									"pm.test(\"Totals are positive numbers\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.totalStations).to.be.above(0);",
+									"    pm.expect(jsonData.totalBikeStands).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations/summary",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations", "summary"]
+						}
+					}
+				},
+				{
+					"name": "Create New Station",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response contains created station\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('number');",
+									"    pm.expect(jsonData.name).to.equal('Test Station');",
+									"});",
+									"",
+									"pm.test(\"Location header is present\", function () {",
+									"    pm.response.to.have.header('Location');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"number\": 1000,\n  \"name\": \"Test Station\",\n  \"address\": \"Test Address\",\n  \"latitude\": 53.34,\n  \"longitude\": -6.26,\n  \"bikeStands\": 20,\n  \"availableBikes\": 10,\n  \"status\": \"OPEN\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations"]
+						}
+					}
+				},
+				{
+					"name": "Update Station",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Station was updated\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.availableBikes).to.equal(15);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"availableBikes\": 15\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/stations/42",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "stations", "42"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "V2 - CosmosDB Based",
+			"item": [
+				{
+					"name": "Get All Stations V2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has data property\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/stations",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v2", "stations"]
+						}
+					}
+				},
+				{
+					"name": "Get Station by Number V2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Station number matches\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.number).to.equal(42);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/stations/42",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v2", "stations", "42"]
+						}
+					}
+				},
+				{
+					"name": "Get Stations Summary V2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Summary has all required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('totalStations');",
+									"    pm.expect(jsonData).to.have.property('totalBikeStands');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v2/stations/summary",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v2", "stations", "summary"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Health Check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Health status is Healthy\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.status).to.equal('Healthy');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/health",
+					"host": ["{{baseUrl}}"],
+					"path": ["health"]
+				}
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://localhost:7000",
+			"type": "string"
+		}
+	]
+}

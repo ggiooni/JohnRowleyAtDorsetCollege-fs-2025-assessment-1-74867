@@ -50,6 +50,7 @@ public class StationsApiClient
 
             queryParams.Add($"page={page}");
             queryParams.Add($"pageSize={pageSize}");
+            queryParams.Add("api-version=2.0");
 
             var queryString = string.Join("&", queryParams);
             var url = $"api/v2/stations?{queryString}";
@@ -70,7 +71,7 @@ public class StationsApiClient
     {
         try
         {
-            var url = $"api/v2/stations/{number}";
+            var url = $"api/v2/stations/{number}?api-version=2.0";
             _logger.LogInformation("Fetching station {Number} from: {Url}", number, url);
 
             var response = await _httpClient.GetFromJsonAsync<StationDto>(url, _jsonOptions);
@@ -94,7 +95,7 @@ public class StationsApiClient
         {
             _logger.LogInformation("Creating new station: {Name}", createDto.Name);
 
-            var response = await _httpClient.PostAsJsonAsync("api/v2/stations", createDto, _jsonOptions);
+            var response = await _httpClient.PostAsJsonAsync("api/v2/stations?api-version=2.0", createDto, _jsonOptions);
             response.EnsureSuccessStatusCode();
 
             var station = await response.Content.ReadFromJsonAsync<StationDto>(_jsonOptions);
@@ -115,7 +116,7 @@ public class StationsApiClient
         {
             _logger.LogInformation("Updating station {Number}", number);
 
-            var response = await _httpClient.PutAsJsonAsync($"api/v2/stations/{number}", updateDto, _jsonOptions);
+            var response = await _httpClient.PutAsJsonAsync($"api/v2/stations/{number}?api-version=2.0", updateDto, _jsonOptions);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -143,7 +144,7 @@ public class StationsApiClient
         {
             _logger.LogInformation("Deleting station {Number}", number);
 
-            var response = await _httpClient.DeleteAsync($"api/v2/stations/{number}");
+            var response = await _httpClient.DeleteAsync($"api/v2/stations/{number}?api-version=2.0");
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {

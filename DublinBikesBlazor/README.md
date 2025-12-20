@@ -12,6 +12,44 @@ A Blazor Server application for managing Dublin Bikes stations with real-time da
 - **Real-time Updates**: Data updates from the API background service
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 - **Accessibility**: ARIA labels, keyboard navigation, and screen reader support
+- **URL State Persistence**: Filters, sorting, and pagination are preserved in the URL query string
+
+## Screenshots
+
+### Home Page
+Welcome page with project overview and navigation to stations.
+
+![Home Page](screenshots/home-page.png)
+
+### Master List View
+The main stations page showing all bike stations with sorting and pagination.
+
+![Master List View](screenshots/master-list.png)
+
+### Station Detail Panel
+Detailed view of a selected station showing capacity, coordinates, and last update.
+
+![Station Detail](screenshots/station-detail.png)
+
+### Filters in Action
+Demonstration of the filtering system with "Open Only" filter applied.
+
+![Filters Applied](screenshots/filters-applied.png)
+
+### Search Feature
+Text search filtering stations by name/address with instant results.
+
+![Search Feature](screenshots/search-feature.png)
+
+### Create Station Form
+Form for adding a new bike station to the system.
+
+![Create Station](screenshots/create-form.png)
+
+### Edit Station Form
+Form for updating existing station information with current values pre-filled.
+
+![Edit Station](screenshots/edit-form.png)
 
 ## Prerequisites
 
@@ -113,6 +151,30 @@ Navigate through stations with:
 - Direct page number selection
 - Shows current page and total pages
 - Configurable page size (default: 10 per page)
+
+### URL State Preservation
+
+The application preserves your current view state in the URL query string:
+
+**Supported Parameters:**
+- `q` - Search query text
+- `status` - Filter by OPEN or CLOSED
+- `minBikes` - Minimum available bikes filter
+- `sort` - Sort field (name, availableBikes)
+- `dir` - Sort direction (asc, desc)
+- `page` - Current page number
+
+**Examples:**
+```
+/stations?status=OPEN&minBikes=5
+/stations?q=grafton&sort=availableBikes&dir=desc
+/stations?status=OPEN&page=2
+```
+
+This means you can:
+- Refresh the page without losing your filters
+- Share a filtered view via URL
+- Use browser back/forward to navigate filter history
 
 ### Detail View
 
@@ -292,7 +354,9 @@ Change the port in `Properties/launchSettings.json`:
 
 ✅ **Accessibility**: ARIA labels, keyboard navigation, screen reader support
 
-✅ **Documentation**: This comprehensive README
+✅ **State Management & URL**: Query string preserves filters/sort/page on refresh
+
+✅ **Documentation**: This comprehensive README with screenshots
 
 ## License
 
